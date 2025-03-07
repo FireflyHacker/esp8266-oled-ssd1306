@@ -238,7 +238,7 @@ class OLEDDisplay : public Stream {
     void drawFastImage(int16_t x, int16_t y, int16_t width, int16_t height, const uint8_t *image);
 
     // Draw a XBM
-    void drawXbm(int16_t x, int16_t y, int16_t width, int16_t height, const uint8_t *xbm);
+    void drawXbm(int16_t x, int16_t y, int16_t width, int16_t height, const uint8_t *xbm, float angleRad);
 
     // Draw icon 16x16 xbm format
     void drawIco16x16(int16_t x, int16_t y, const uint8_t *ico, bool inverse = false);
@@ -296,7 +296,7 @@ class OLEDDisplay : public Stream {
     // normal brightness & contrast:  contrast = 100
     void setContrast(uint8_t contrast, uint8_t precharge = 241, uint8_t comdetect = 64);
 
-    // Convenience method to access 
+    // Convenience method to access
     virtual void setBrightness(uint8_t);
 
     // Reset display rotation or mirroring

@@ -518,23 +518,48 @@ void OLEDDisplay::drawFastImage(int16_t xMove, int16_t yMove, int16_t width, int
   drawInternal(xMove, yMove, width, height, image, 0, 0);
 }
 
-void OLEDDisplay::drawXbm(int16_t xMove, int16_t yMove, int16_t width, int16_t height, const uint8_t *xbm) {
-  int16_t widthInXbm = (width + 7) / 8;
-  uint8_t data = 0;
+void OLEDDisplay::drawXbm(int16_t xMove, int16_t yMove,
+  int16_t width, int16_t height,
+  const uint8_t *xbm, float angleRad) {
+int16_t widthInXbm = (width + 7) / 8;
+uint8_t data = 0;
 
-  for(int16_t y = 0; y < height; y++) {
-    for(int16_t x = 0; x < width; x++ ) {
-      if (x & 7) {
-        data >>= 1; // Move a bit
-      } else {  // Read new data every 8 bit
-        data = pgm_read_byte(xbm + (x / 8) + y * widthInXbm);
-      }
-      // if there is a bit draw it
-      if (data & 0x01) {
-        setPixel(xMove + x, yMove + y);
-      }
-    }
-  }
+// Precompute center of the image
+float cx = (width  - 1) / 2.0f;
+float cy = (height - 1) / 2.0f;
+
+// Precompute sin/cos to avoid calling them for every pixel
+float c = cos(angleRad);
+float s = sin(angleRad);
+
+for (int16_t y = 0; y < height; y++) {
+for (int16_t x = 0; x < width; x++) {
+// Pull out the next bit from the XBM
+if (x & 7) {
+data >>= 1;
+} else {
+data = pgm_read_byte(xbm + (x / 8) + y * widthInXbm);
+}
+
+// If this bit is set, compute the rotated position
+if (data & 0x01) {
+// Translate (x,y) so (cx,cy) is origin
+float dx = x - cx;
+float dy = y - cy;
+
+// Apply 2D rotation about (0,0)
+float rx =  dx * c - dy * s;
+float ry =  dx * s + dy * c;
+
+// Translate back and add the top-left offset (xMove, yMove)
+int16_t finalX = (int16_t)roundf(cx + rx) + xMove;
+int16_t finalY = (int16_t)roundf(cy + ry) + yMove;
+
+// Set the rotated pixel
+setPixel(finalX, finalY);
+}
+}
+}
 }
 
 void OLEDDisplay::drawIco16x16(int16_t xMove, int16_t yMove, const uint8_t *ico, bool inverse) {
@@ -688,7 +713,7 @@ uint16_t OLEDDisplay::drawStringMaxWidth(int16_t xMove, int16_t yMove, uint16_t 
       drawStringResult = drawStringInternal(xMove, yMove + (lineNumber++) * lineHeight , &text[lastDrawnPos], i - lastDrawnPos, strWidth, true);
       if (firstLineChars == 0)
         firstLineChars = i;
-        
+
       lastDrawnPos = i + 1;
       strWidth = 0;
       if (drawStringResult == 0) // we are past the display already?
